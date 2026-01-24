@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Fusion OS v29 — Clean Orb</title>
+
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#050505">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- FONTS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=Space+Grotesk:ital,wght@0,300;0,400;0,500;0,700;1,300;1,700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Space Grotesk', 'sans-serif'],
+          },
+          colors: {
+            dynamic: 'var(--active-color)',
+          },
+          animation: {
+            'breathe-dynamic': 'breathe var(--anim-speed) ease-in-out infinite',
+            'float': 'float 8s ease-in-out infinite',
+          },
+          keyframes: {
+            breathe: {
+              '0%, 100%': { opacity: '0.3', transform: 'scale(1)' },
+              '50%': { opacity: '0.6', transform: 'scale(1.05)' },
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --bg: #050505; 
+      --glass: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      
+      /* VARIÁVEIS DINÂMICAS (META PULSO) */
+      --active-color: #E5E5E5;         /* Cor Principal (Texto/Ícones) */
+      --active-glow: rgba(255, 255, 255, 0.1); 
+      --element-glow: #505050;         /* Cor do Fundo (Elemento) */
+      --anim-speed: 5s;                /* Velocidade (Essência) */
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+    
+    body { 
+      background: var(--bg); 
+      color: #fff; 
+      font-family: 'Inter', sans-serif;
+      overflow: hidden; 
+      height: 100vh; width: 100vw;
+      user-select: none;
+      transition: background 1s ease;
+    }
+
+    /* --- ATMOSPHERE (Elemento Controla Isso) --- */
+    .ambient-glow {
+        position: fixed; pointer-events: none; z-index: 0;
+        border-radius: 50%; filter: blur(120px); 
+        transition: background 1.5s ease, opacity 1.5s ease, transform 10s ease;
+        animation: breathe var(--anim-speed) ease-in-out infinite;
+    }
+    #glow-top { top: -20%; left: -20%; width: 80vw; height: 80vw; background: var(--element-glow); opacity: 0.15; }
+    #glow-bottom { bottom: -20%; right: -20%; width: 90vw; height: 90vw; background: var(--element-glow); opacity: 0.08; }
+
+    /* --- VIEWPORT --- */
+    #universe-viewport {
+      display: flex;
+      width: 300vw; 
+      height: 100vh;
+      transform: translateX(-100vw);
+      transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+      position: relative; z-index: 10;
+    }
+
+    .screen-panel { 
+        width: 100vw; height: 100vh; flex-shrink: 0; position: relative; 
+        overflow: hidden; 
+    }
+
+    /* --- SCROLL SNAP SYSTEM --- */
+    .snap-container {
+        height: 100vh; width: 100%; overflow-y: scroll;
+        scroll-snap-type: y mandatory; scroll-behavior: smooth;
+        scrollbar-width: none; -ms-overflow-style: none;
+    }
+    .snap-container::-webkit-scrollbar { display: none; }
+
+    .snap-section {
+        height: 100vh; width: 100%; scroll-snap-align: start; scroll-snap-stop: always;
+        position: relative; display: flex; flex-direction: column;
+        justify-content: center; align-items: center;
+    }
+
+    /* --- UI COMPONENTS --- */
+    .glass-card {
+        background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+        border: 1px solid rgba(255,255,255,0.06);
+        backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+        border-radius: 24px;
+        transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .glass-card:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); }
+
+    .glass-pill {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(16px);
+      border-radius: 100px; padding: 6px 16px;
+      cursor: pointer; transition: all 0.3s;
+    }
+    .glass-pill:hover { background: rgba(255,255,255,0.08); border-color: var(--active-color); }
+
+    .matrix-item {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 12px; transition: 0.3s;
+    }
+    .matrix-item.active {
+        border-color: var(--active-color);
+        background: var(--active-glow);
+    }
+
+    /* Custom Scrollbar - Mais elegante */
+    .custom-scroll::-webkit-scrollbar { width: 4px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: var(--active-color); }
+
+    .tab-btn { opacity: 0.4; transition: 0.3s; position: relative; padding: 10px 0; font-family: 'Space Grotesk', sans-serif; }
+    .tab-btn.active { opacity: 1; color: var(--active-color); }
+    .tab-btn.active::after { content:''; position: absolute; bottom:0; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background: var(--active-color); box-shadow: 0 0 10px var(--active-color); }
+
+    /* ORB STYLES */
+    .orb-wrapper { transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1); }
+    
+    /* Architect Button Grid */
+    .arch-btn {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        padding: 12px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);
+        background: rgba(255,255,255,0.02); transition: all 0.3s; cursor: pointer;
+    }
+    .arch-btn:hover { background: rgba(255,255,255,0.05); border-color: var(--active-color); transform: translateY(-2px); }
+    
+    /* Typography Styles */
+    .title-mix { font-family: 'Space Grotesk', sans-serif; }
+    .title-mix i { font-weight: 300; font-style: italic; opacity: 0.7; }
+    .title-mix b { font-weight: 700; font-style: normal; }
+
+    /* Dynamic Transitions */
+    .text-dynamic { color: var(--active-color); transition: color 0.8s ease; }
+    .border-dynamic { border-color: var(--active-color); transition: border-color 0.8s ease; }
+    .bg-dynamic-soft { background-color: var(--active-glow); transition: background-color 0.8s ease; }
+
+    /* Navigation */
+    #nav-indicator { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 100; pointer-events: none; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.2); transition: 0.4s; }
+    .dot.active { width: 30px; background: var(--active-color); border-radius: 10px; box-shadow: 0 0 10px var(--active-color); }
+  </style>
+</head>
+<body>
+
+  <div id="glow-top" class="ambient-glow"></div>
+  <div id="glow-bottom" class="ambient-glow"></div>
+
+  <!-- HEADER -->
+  <header class="fixed top-0 left-0 right-0 z-[100] px-6 py-8 flex justify-between items-center pointer-events-none select-none">
+    <div onclick="Navigation.to(1)" class="glass-pill flex items-center gap-3 pointer-events-auto cursor-pointer border-white/5 hover:border-white/10">
+      <div id="header-dot" class="w-1.5 h-1.5 rounded-full bg-dynamic shadow-[0_0_12px_var(--active-color)] transition-all duration-700"></div>
+      <span id="displayUserHeader" class="font-display font-semibold text-[10px] tracking-[0.15em] text-white/80">PILOTO</span>
+    </div>
+    
+    <div class="glass-pill pointer-events-auto flex items-center gap-3 border-white/5">
+      <div id="header-sys-name" class="font-display font-bold text-[10px] tracking-widest text-dynamic cursor-default transition uppercase">SISTEMA</div>
+      <div class="w-[1px] h-3 bg-white/10"></div>
+      <div class="font-mono text-[9px] text-white/30">v29.0</div>
+    </div>
+  </header>
+
+  <div id="universe-viewport">
+      
+      <!-- SCREEN 0: CORTEX -->
+      <section class="screen-panel" id="view-cortex">
+          <div class="pt-28 px-6 h-full flex flex-col max-w-4xl mx-auto pb-6">
+              <div class="flex items-end justify-between mb-8">
+                  <div>
+                    <h2 class="title-mix text-4xl text-white tracking-tighter">
+                        <i>Córtex</i><b>.AI</b>
+                    </h2>
+                    <p class="text-[10px] text-white/30 uppercase tracking-[0.4em] mt-2 font-bold pl-1">Arquivo de Consciência</p>
+                  </div>
+                  <div class="flex gap-6 text-[10px] font-bold uppercase tracking-widest">
+                      <button onclick="Cortex.switch('crystals')" id="tab-crystals" class="tab-btn active">Memórias</button>
+                      <button onclick="Cortex.switch('matrices')" id="tab-matrices" class="tab-btn">Matrizes</button>
+                  </div>
+              </div>
+
+              <!-- Crystals -->
+              <div id="panel-crystals" class="flex-1 overflow-hidden flex flex-col animate-[fadeIn_0.5s_ease]">
+                  <div class="flex gap-3 mb-6">
+                      <div class="flex-1 glass-card rounded-xl flex items-center px-4 py-3 group focus-within:border-dynamic transition border-white/5">
+                          <i data-lucide="search" class="w-3.5 h-3.5 text-white/30 group-focus-within:text-dynamic transition"></i>
+                          <input id="memory-search" oninput="Cortex.render()" class="w-full ml-3 text-xs bg-transparent text-white placeholder-white/20 outline-none" placeholder="Acessar subconsciente...">
+                      </div>
+                      <button onclick="Cortex.openNewMemory()" class="glass-card px-5 rounded-xl hover:bg-white/10 transition flex items-center justify-center border-white/5 group">
+                          <i data-lucide="plus" class="w-4 h-4 text-white/50 group-hover:text-dynamic transition"></i>
+                      </button>
+                  </div>
+                  <div id="crystal-container" class="flex-1 overflow-y-auto custom-scroll space-y-3 pb-24 pr-1"></div>
+              </div>
+
+              <!-- Matrices -->
+              <div id="panel-matrices" class="hidden flex-1 overflow-hidden flex flex-col animate-[fadeIn_0.5s_ease]">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div class="glass-card p-5 flex flex-col justify-between h-32">
+                          <p class="text-[9px] text-white/30 uppercase font-black tracking-widest">Matriz Ativa</p>
+                          <h4 id="active-matrix-name" class="text-lg font-display italic font-bold text-dynamic truncate">Nenhuma</h4>
+                          <div class="flex gap-2">
+                              <button onclick="Cortex.importMatrix()" class="text-[9px] bg-white/5 px-3 py-1.5 rounded-lg hover:bg-white/10 transition uppercase font-bold text-white/50">Importar</button>
+                              <button onclick="Cortex.createNewMatrix()" class="text-[9px] bg-dynamic/10 text-dynamic px-3 py-1.5 rounded-lg hover:bg-dynamic/20 transition uppercase font-bold border border-dynamic/20">Nova</button>
+                          </div>
+                      </div>
+                      <div class="glass-card p-5 flex flex-col h-32">
+                          <p class="text-[9px] text-white/30 uppercase font-black tracking-widest mb-2">Arquivos</p>
+                          <div id="matrix-list-mini" class="flex-1 overflow-y-auto custom-scroll space-y-2"></div>
+                      </div>
+                  </div>
+                  <div class="flex-1 glass-card p-5 flex flex-col mb-20">
+                      <div class="flex justify-between items-center mb-4">
+                          <span id="editor-title" class="text-[9px] font-black uppercase tracking-widest text-white/40">Editor</span>
+                          <div class="flex gap-3">
+                              <button onclick="Cortex.exportMatrix()" class="text-white/20 hover:text-white transition"><i data-lucide="download" class="w-3.5 h-3.5"></i></button>
+                              <button onclick="Cortex.saveActiveMatrix()" class="text-dynamic font-bold text-[9px] uppercase hover:text-white transition">Salvar</button>
+                          </div>
+                      </div>
+                      <textarea id="matrix-editor" class="flex-1 bg-transparent border-none text-xs font-mono text-white/70 resize-none outline-none custom-scroll leading-relaxed" placeholder="// Insira as diretrizes da realidade..."></textarea>
+                  </div>
+              </div>
+          </div>
+      </section>
+
+      <!-- SCREEN 1: NEXUS -->
+      <section class="screen-panel" id="view-nexus">
+          <div id="nexus-vertical" class="snap-container">
+              
+              <!-- SECTION 1: ORB & TUNER -->
+              <div class="snap-section">
+                  
+                  <!-- ORB (Base Geometry - Smaller) -->
+                  <div id="orbClickable" class="relative group cursor-grab active:cursor-grabbing p-8 transition-all duration-700 z-10"
+                       onmousedown="OrbDrag.start(event)" ontouchstart="OrbDrag.start(event)">
+                      <div class="orb-wrapper relative" id="orbContainer">
+                          <!-- Halo (Controlled by Element Color) -->
+                          <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-dynamic to-transparent opacity-20 blur-[60px] animate-breathe-dynamic" style="background: var(--element-glow)"></div>
+                          
+                          <!-- BASE ORB SVG -->
+                          <svg viewBox="0 0 200 200" class="w-48 h-48 md:w-64 md:h-64 drop-shadow-[0_0_30px_rgba(255,255,255,0.05)]">
+                            <defs>
+                              <linearGradient id="orbGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:var(--active-color); stop-opacity:0.9"></stop>
+                                <stop offset="100%" style="stop-color:var(--active-color); stop-opacity:0.1"></stop>
+                              </linearGradient>
+                            </defs>
+                            <circle cx="100" cy="100" r="90" stroke="url(#orbGrad)" stroke-width="2" fill="none"></circle>
+                            <line x1="100" y1="10" x2="100" y2="190" stroke="url(#orbGrad)" stroke-width="3" opacity="0.4"></line>
+                            <path d="M100 10 A90 90 0 0 0 100 190" stroke="url(#orbGrad)" stroke-width="6" fill="none"></path>
+                          </svg>
+                      </div>
+                  </div>
+
+                  <!-- HERO & TUNER -->
+                  <div class="text-center z-20 mt-4 flex flex-col items-center max-w-md mx-auto">
+                    <!-- DISPLAY NAME -->
+                    <h1 id="hero-title" class="title-mix text-5xl md:text-6xl tracking-tighter text-white opacity-90 uppercase transition-all duration-700">
+                        <i>Sintonize</i>
+                    </h1>
+                    
+                    <!-- META PULSO TUNER (User Selectable) -->
+                    <div class="flex items-center justify-center gap-3 mt-6 bg-black/40 p-2 rounded-full border border-white/5 backdrop-blur-md">
+                        <!-- Cor -->
+                        <button onclick="MetaPulso.cycle('color')" class="glass-pill px-4 py-2 rounded-full flex flex-col items-center min-w-[70px] bg-transparent border-transparent group">
+                            <span class="text-[7px] font-mono text-white/30 uppercase tracking-wider mb-1">Freq</span>
+                            <span id="tuner-color" class="text-[9px] font-bold text-dynamic uppercase tracking-wide transition-all group-hover:scale-110">...</span>
+                        </button>
+                        <div class="h-4 w-[1px] bg-white/10"></div>
+                        <!-- Essência -->
+                        <button onclick="MetaPulso.cycle('essence')" class="glass-pill px-4 py-2 rounded-full flex flex-col items-center min-w-[70px] bg-transparent border-transparent group">
+                            <span class="text-[7px] font-mono text-white/30 uppercase tracking-wider mb-1">Essência</span>
+                            <span id="tuner-essence" class="text-[9px] font-bold text-white uppercase tracking-wide transition-all group-hover:scale-110">...</span>
+                        </button>
+                        <div class="h-4 w-[1px] bg-white/10"></div>
+                        <!-- Elemento -->
+                        <button onclick="MetaPulso.cycle('element')" class="glass-pill px-4 py-2 rounded-full flex flex-col items-center min-w-[70px] bg-transparent border-transparent group">
+                            <span class="text-[7px] font-mono text-white/30 uppercase tracking-wider mb-1">Elemento</span>
+                            <span id="tuner-element" class="text-[9px] font-bold text-white uppercase tracking-wide transition-all group-hover:scale-110">...</span>
+                        </button>
+                    </div>
+        
+                    <div id="triad-status-container" class="mt-4 h-6 flex items-center justify-center opacity-0 transition-opacity duration-1000">
+                         <span class="w-1.5 h-1.5 rounded-full bg-dynamic mr-2 animate-pulse"></span>
+                         <p id="triad-status" class="text-[9px] font-mono text-dynamic tracking-widest uppercase">Sinal Estabelecido</p>
+                    </div>
+                  </div>
+
+                  <div class="absolute bottom-12 animate-bounce opacity-20 pointer-events-none">
+                      <i data-lucide="chevron-down" class="w-5 h-5 text-white"></i>
+                  </div>
+              </div>
+
+              <!-- SECTION 2: CARDS -->
+              <div class="snap-section px-6 bg-gradient-to-t from-black/50 to-transparent">
+                  <div class="max-w-4xl w-full">
+                    <h3 class="text-2xl title-mix uppercase tracking-tight mb-8 flex items-center gap-3 text-white">
+                        <i data-lucide="activity" class="w-5 h-5 text-dynamic"></i>
+                        <span>Sinais <b>Vitais</b></span>
+                    </h3>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="glass-card p-6 border-white/5 hover:border-dynamic/30">
+                            <i data-lucide="zap" class="w-5 h-5 mb-4 text-white/20 group-hover:text-dynamic transition"></i>
+                            <div class="text-[9px] uppercase font-bold text-white/30 tracking-wider">Sistema</div>
+                            <div class="text-lg font-display font-bold mt-1 text-white">Online</div>
+                        </div>
+                        <div class="glass-card p-6 border-dynamic/20 bg-dynamic-soft relative overflow-hidden">
+                            <div class="absolute -right-4 -bottom-4 opacity-10 rotate-12"><i data-lucide="fingerprint" class="w-24 h-24"></i></div>
+                            <i data-lucide="user" class="w-5 h-5 mb-4 text-dynamic relative z-10"></i>
+                            <div class="text-[9px] uppercase font-bold text-dynamic/50 tracking-wider relative z-10">Arquétipo</div>
+                            <div id="card-arch-name" class="text-lg font-display font-bold mt-1 text-dynamic relative z-10 truncate">...</div>
+                        </div>
+                        <div class="glass-card p-6 border-white/5 col-span-2">
+                             <div class="flex justify-between items-center mb-2">
+                                <div class="text-[9px] uppercase font-bold text-white/30 tracking-wider">Memória Disponível</div>
+                                <div class="text-[9px] font-mono text-dynamic">100%</div>
+                             </div>
+                             <div class="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                 <div class="h-full bg-dynamic w-full opacity-50"></div>
+                             </div>
+                        </div>
+                    </div>
+                  </div>
+              </div>
+
+              <!-- SECTION 3: DR. K -->
+              <div class="snap-section px-6 bg-gradient-to-b from-black/50 to-transparent">
+                  <div class="max-w-4xl w-full flex flex-col justify-center h-full">
+                      <h2 class="text-xs uppercase tracking-[0.3em] text-white/30 font-bold mb-8">Curadoria Dr. K</h2>
+                      
+                      <div class="glass-card p-8 mb-8 border-l-2 border-dynamic relative overflow-hidden">
+                        <div class="absolute right-0 top-0 p-4 opacity-10"><i data-lucide="quote" class="w-12 h-12"></i></div>
+                        <p id="drk-quote" class="text-xl md:text-2xl font-display font-light italic text-white/90 leading-relaxed relative z-10">
+                          "O sistema aguarda seu comando para iniciar a sincronização."
+                        </p>
+                        <div class="flex items-center gap-2 mt-6 opacity-60">
+                            <div class="w-1 h-1 rounded-full bg-dynamic"></div>
+                            <span class="text-[9px] font-mono uppercase tracking-[0.25em] text-dynamic">Insight Meta Pulso</span>
+                        </div>
+                      </div>
+
+                      <div id="archetype-video-suggestion" class="w-full aspect-video rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden relative group cursor-pointer shadow-2xl transition-all hover:border-dynamic/30">
+                           <div class="absolute inset-0 bg-black/60 group-hover:bg-black/40 transition z-10"></div>
+                           <img id="suggestion-thumb" src="" class="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-105 transition duration-1000">
+                           <div class="absolute inset-0 flex flex-col items-center justify-center z-20 gap-3">
+                               <div class="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center group-hover:bg-dynamic group-hover:text-black transition duration-500 border border-white/10 group-hover:border-transparent">
+                                   <i data-lucide="play" class="w-5 h-5 fill-current ml-1"></i>
+                               </div>
+                               <span class="text-[9px] font-bold uppercase tracking-[0.2em] text-white/70 bg-black/40 px-3 py-1.5 rounded-full backdrop-blur border border-white/5 group-hover:border-dynamic/30 transition">Sintonizar Frequência</span>
+                           </div>
+                      </div>
+                  </div>
+              </div>
+
+          </div>
+      </section>
+
+      <!-- SCREEN 2: DUALTUBE -->
+      <section class="screen-panel" id="view-dualtube">
+          <div class="pt-28 px-6 h-full flex flex-col max-w-4xl mx-auto pb-6">
+              <div class="mb-10 flex justify-between items-end">
+                <div>
+                    <h2 class="title-mix text-4xl text-white tracking-tighter uppercase">
+                        <i>Dual</i><b>Tube</b>
+                    </h2>
+                    <div class="h-1 w-12 bg-dynamic mt-3 rounded-full opacity-80"></div>
+                </div>
+                <div class="text-right">
+                    <span id="dt-watched-count" class="font-display font-bold text-3xl text-white/10">0</span>
+                    <p class="text-[8px] uppercase text-white/20 font-bold tracking-widest mt-1">Vistos</p>
+                </div>
+              </div>
+              <div id="video-categories" class="flex-1 overflow-y-auto custom-scroll space-y-12 pb-32">
+                  <!-- Injected by JS -->
+              </div>
+          </div>
+      </section>
+      
+  </div>
+
+  <!-- NAVIGATION DOTS -->
+  <div id="nav-indicator">
+      <div class="dot" id="dot-0"></div>
+      <div class="dot active" id="dot-1"></div>
+      <div class="dot" id="dot-2"></div>
+  </div>
+
+  <!-- MODALS -->
+  <div id="modal-overlay" class="fixed inset-0 z-[500] bg-black/80 backdrop-blur-xl hidden flex items-center justify-center p-6">
+      <div id="modal-content" class="w-full max-w-lg glass-card p-8 scale-90 opacity-0 transition-all duration-300 bg-black/60 border border-white/10"></div>
+  </div>
+
+  <!-- PLAYER -->
+  <div id="player-overlay" class="fixed inset-0 z-[1000] bg-black/95 hidden flex-col transition-opacity duration-500">
+      <div class="p-6 flex justify-between items-center border-b border-white/5 bg-black">
+          <div class="flex items-center gap-3">
+              <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+              <span class="font-mono text-[10px] text-white/50 uppercase tracking-widest">Transmissão Segura</span>
+          </div>
+          <button onclick="closePlayer()" class="glass-pill text-[10px] font-bold uppercase hover:bg-white/10 transition border-white/10 text-white/60">Fechar</button>
+      </div>
+      <div class="flex-1 flex items-center justify-center p-4">
+          <div id="yt-embed" class="w-full max-w-5xl aspect-video rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-[#050505]"></div>
+      </div>
+  </div>
+
+  <div id="di_toast" class="fixed bottom-32 left-1/2 -translate-x-1/2 z-[2000] pointer-events-none flex flex-col gap-2 w-max items-center"></div>
+
+  <script>
+    /* ========== SYSTEM CONSTANTS ========== */
+    const KEYS = {
+        CORTEX: 'di_cortex_v29', 
+        USER: 'di_userName',
+        STATS: 'di_videoStats',
+        TRIAD: 'di_metaTriad',
+        ACTIVE_META: 'di_activeMetaData',
+        INFODOSE_NAME: 'di_infodoseName' // To sync with Viviv
+    };
+
+    let STATE = {
+        screen: 1,
+        cortex: { crystals: [], matrices: [] },
+        activePanel: 'crystals',
+        editingMatrixId: null,
+        triad: { color: '---', essence: '---', element: '---' }, // Start Clean
+        metaData: null
+    };
+
+    // TUNER OPTIONS
+    const OPTIONS = {
+        colors: ['Dourado', 'Azul', 'Vermelho', 'Verde', 'Roxo', 'Prata', 'Preto'],
+        essences: ['Movimento', 'Silêncio'],
+        elements: ['Fogo', 'Água', 'Madeira', 'Terra', 'Metal']
+    };
+    
+    // VISUAL MAPS (CSS VARS)
+    const COLOR_MAP = {
+        'Dourado': '#FFD700', 'Azul': '#38BDF8', 'Vermelho': '#EF4444',
+        'Verde': '#22C55E', 'Roxo': '#A855F7', 'Prata': '#E5E7EB', 'Preto': '#505050',
+        '---': '#FFFFFF' // Default
+    };
+
+    const ELEMENT_GLOW_MAP = {
+        'Fogo': '#FF4500', 'Água': '#00BFFF', 'Madeira': '#228B22', 
+        'Terra': '#8B4513', 'Metal': '#C0C0C0', '---': '#202020'
+    };
+
+    const ANIM_SPEED_MAP = {
+        'Movimento': '3s', 'Silêncio': '8s', '---': '5s'
+    };
+
+    // --- INFODOSE ARCHITECTS BRIDGE ---
+    const INFODOSE_PRESETS = {
+        "ATLAS":   { color: 'Azul',     essence: 'Silêncio', element: 'Metal', desc: 'Estrutura & Governo' },
+        "NOVA":    { color: 'Roxo',     essence: 'Movimento', element: 'Fogo',  desc: 'Inovação & Fluxo' },
+        "VITALIS": { color: 'Verde',    essence: 'Movimento', element: 'Madeira', desc: 'Energia & Ação' },
+        "PULSE":   { color: 'Vermelho', essence: 'Movimento', element: 'Fogo',  desc: 'Ritmo & Emoção' },
+        "ARTEMIS": { color: 'Roxo',     essence: 'Silêncio', element: 'Madeira', desc: 'Foco & Caça' },
+        "SERENA":  { color: 'Azul',     essence: 'Silêncio', element: 'Água',  desc: 'Paz & Harmonia' },
+        "KAOS":    { color: 'Vermelho', essence: 'Movimento', element: 'Água',  desc: 'Mudança & Entropia' },
+        "LUMINE":  { color: 'Dourado',  essence: 'Movimento', element: 'Fogo',  desc: 'Brilho & Carisma' },
+        "SOLUS":   { color: 'Preto',    essence: 'Silêncio', element: 'Água',  desc: 'Vazio & Verdade' },
+        "HORUS":   { color: 'Azul',     essence: 'Movimento', element: 'Metal', desc: 'Visão & Estratégia' },
+        "AION":    { color: 'Prata',    essence: 'Silêncio', element: 'Metal', desc: 'Tempo & Evolução' }
+    };
+
+    /* ========== INITIALIZATION ========== */
+    window.onload = async () => {
+        lucide.createIcons();
+        await MetaPulso.init();
+        loadSystem();
+        
+        setupNavigation();
+        setupGestures();
+        
+        Cortex.render();
+        DualTube.render();
+        
+        // Initial Visual Update (might be clean or loaded)
+        MetaPulso.updateVisuals(); 
+
+        Navigation.to(1);
+        
+        // WELCOME TOASTER
+        setTimeout(() => {
+            const user = localStorage.getItem(KEYS.USER) || 'Piloto';
+            toast(`Oi, Dual, ${user}. Como você está se sentindo agora?`, 4000);
+        }, 1200);
+
+        initFloatingButton();
+    };
+
+    function loadSystem() {
+        try {
+            const saved = localStorage.getItem(KEYS.CORTEX);
+            STATE.cortex = saved ? JSON.parse(saved) : { crystals: [], matrices: [] };
+        } catch(e) { STATE.cortex = { crystals: [], matrices: [] }; }
+
+        // Load Triad BUT respect "Clean" intent if first run or explicitly reset
+        // If a Viviv name exists, we might want to auto-sync
+        const vivivName = localStorage.getItem(KEYS.INFODOSE_NAME);
+        if(vivivName && INFODOSE_PRESETS[vivivName]) {
+             // Auto-load Viviv preset
+             STATE.triad = INFODOSE_PRESETS[vivivName];
+        } else {
+             try {
+                const t = localStorage.getItem(KEYS.TRIAD);
+                if(t) STATE.triad = JSON.parse(t);
+            } catch(e) {}
+        }
+        
+        const user = localStorage.getItem(KEYS.USER) || 'PILOTO';
+        document.getElementById('displayUserHeader').innerText = user.toUpperCase();
+    }
+
+    function saveCortex() { localStorage.setItem(KEYS.CORTEX, JSON.stringify(STATE.cortex)); }
+    function saveTriad() { localStorage.setItem(KEYS.TRIAD, JSON.stringify(STATE.triad)); }
+
+    /* ========== META PULSO SYSTEM (THE ENGINE) ========== */
+    const MetaPulso = {
+        init: async () => {
+            try {
+                const req = await fetch('metapulso_70_combinacoes.json');
+                if(!req.ok) throw new Error('JSON Missing');
+                STATE.metaData = await req.json();
+            } catch (e) {
+                console.warn('Meta Pulso JSON not found. Using fallback.');
+                STATE.metaData = {}; 
+            }
+        },
+
+        cycle: (type) => {
+            const list = type === 'color' ? OPTIONS.colors : 
+                         type === 'essence' ? OPTIONS.essences : 
+                         OPTIONS.elements;
+            
+            // If current is '---', start at index 0
+            const current = STATE.triad[type];
+            let idx = list.indexOf(current);
+            if (idx === -1) idx = -1; 
+            
+            const next = list[(idx + 1) % list.length];
+            STATE.triad[type] = next;
+            
+            // Just update visuals for now, don't necessarily "Activate" full identity until match found
+            MetaPulso.updateVisuals();
+        },
+
+        applyPreset: (archKey) => {
+            const preset = INFODOSE_PRESETS[archKey];
+            if(!preset) return;
+            
+            STATE.triad.color = preset.color;
+            STATE.triad.essence = preset.essence;
+            STATE.triad.element = preset.element;
+            
+            // Sync with Viviv Key
+            localStorage.setItem(KEYS.INFODOSE_NAME, archKey);
+            
+            saveTriad();
+            MetaPulso.updateVisuals();
+            toast(`Arquétipo ${archKey} Ativado`);
+            Modal.hide();
+        },
+
+        updateVisuals: () => {
+            // 1. CSS VARIABLES UPDATE
+            const cVal = STATE.triad.color;
+            const eVal = STATE.triad.essence;
+            const elVal = STATE.triad.element;
+
+            // UI Text Updates
+            document.getElementById('tuner-color').innerText = cVal;
+            document.getElementById('tuner-essence').innerText = eVal;
+            document.getElementById('tuner-element').innerText = elVal;
+
+            // Map Values to CSS
+            const hex = COLOR_MAP[cVal] || '#FFFFFF';
+            const elementGlow = ELEMENT_GLOW_MAP[elVal] || '#303030';
+            const animSpeed = ANIM_SPEED_MAP[eVal] || '5s';
+
+            // Apply to Root
+            const r = document.documentElement;
+            r.style.setProperty('--active-color', hex);
+            r.style.setProperty('--active-glow', hex + '26');
+            r.style.setProperty('--element-glow', elementGlow);
+            r.style.setProperty('--anim-speed', animSpeed);
+
+            // Update Text Colors
+            document.getElementById('tuner-color').style.color = hex;
+
+            // 2. CHECK FOR MATCH (ACTIVATION LOGIC)
+            if (cVal !== '---' && eVal !== '---' && elVal !== '---') {
+                saveTriad();
+                MetaPulso.checkIdentity(cVal, eVal, elVal);
+            } else {
+                 // Clean State
+                 document.getElementById('hero-title').innerHTML = "<i>Sintonize</i>";
+                 document.getElementById('triad-status-container').style.opacity = '0';
+            }
+        },
+
+        checkIdentity: (c, e, el) => {
+             const key = `${c}|${e}|${el}`;
+             const data = STATE.metaData ? STATE.metaData[key] : null;
+             const statusContainer = document.getElementById('triad-status-container');
+
+             if (data) {
+                statusContainer.style.opacity = '1';
+                document.getElementById('triad-status').innerText = "SINAL ESTABELECIDO";
+                
+                const firstName = data.nome.split(' ')[0].toUpperCase();
+                // Animate Title Change
+                const titleEl = document.getElementById('hero-title');
+                if(titleEl.innerText !== firstName) {
+                    titleEl.style.opacity = 0;
+                    setTimeout(() => {
+                        titleEl.innerText = firstName;
+                        titleEl.style.opacity = 0.9;
+                    }, 300);
+                }
+
+                document.getElementById('header-sys-name').innerText = data.nome;
+                document.getElementById('card-arch-name').innerText = firstName;
+                document.getElementById('drk-quote').innerText = `"${data.frase}"`;
+
+                // Logic for Video
+                const vidId = e === 'Movimento' ? 'Id2NI9tv1r4' : 'Bt_rLbMjJDk';
+                document.getElementById('suggestion-thumb').src = `https://img.youtube.com/vi/${vidId}/mqdefault.jpg`;
+                document.getElementById('archetype-video-suggestion').onclick = () => playVideo(vidId, data.nome);
+
+                localStorage.setItem(KEYS.ACTIVE_META, JSON.stringify(data));
+             } else {
+                 statusContainer.style.opacity = '1';
+                 document.getElementById('triad-status').innerText = "BUSCANDO SINAL...";
+                 document.getElementById('hero-title').innerText = "BUSCANDO";
+             }
+        }
+    };
+
+    /* ========== NAVIGATION ========== */
+    const Navigation = {
+        to: (idx) => {
+            STATE.screen = idx;
+            document.getElementById('universe-viewport').style.transform = `translateX(-${idx * 100}vw)`;
+            [0,1,2].forEach(i => {
+                const dot = document.getElementById(`dot-${i}`);
+                if(dot) {
+                    dot.classList.toggle('active', i === idx);
+                    dot.style.backgroundColor = i === idx ? 'var(--active-color)' : 'rgba(255,255,255,0.2)';
+                    dot.style.boxShadow = i === idx ? '0 0 10px var(--active-color)' : 'none';
+                }
+            });
+        }
+    };
+
+    function setupGestures() {
+        let tsX = 0, tsY = 0;
+        document.addEventListener('touchstart', e => { tsX = e.touches[0].clientX; tsY = e.touches[0].clientY; }, {passive:true});
+        document.addEventListener('touchend', e => {
+            const dX = tsX - e.changedTouches[0].clientX;
+            const dY = tsY - e.changedTouches[0].clientY;
+            if(Math.abs(dX) > 60 && Math.abs(dX) > Math.abs(dY)*1.5) {
+                if(dX > 0 && STATE.screen < 2) Navigation.to(STATE.screen + 1);
+                if(dX < 0 && STATE.screen > 0) Navigation.to(STATE.screen - 1);
+            }
+        }, {passive:true});
+    }
+
+    function setupNavigation() {}
+
+    const OrbDrag = {
+        active: false, startX: 0, el: null,
+        start: function(e) { 
+            this.active = true; 
+            this.startX = e.type.includes('mouse')?e.clientX:e.touches[0].clientX; 
+            this.el = document.getElementById('orbContainer');
+            const move = (ev) => this.move(ev);
+            const end = () => {
+                this.end();
+                window.removeEventListener('mousemove', move);
+                window.removeEventListener('mouseup', end);
+                window.removeEventListener('touchmove', move);
+                window.removeEventListener('touchend', end);
+            };
+            window.addEventListener('mousemove', move);
+            window.addEventListener('mouseup', end);
+            window.addEventListener('touchmove', move, {passive:false});
+            window.addEventListener('touchend', end);
+        },
+        move: function(e) {
+            if(!this.active) return;
+            const x = e.type.includes('mouse')?e.clientX:e.touches[0].clientX;
+            const diff = x - this.startX;
+            this.el.style.transform = `translateX(${diff/4}px)`; 
+        },
+        end: function() {
+            if(!this.active) return;
+            this.active = false;
+            const style = window.getComputedStyle(this.el);
+            const matrix = new DOMMatrix(style.transform);
+            if(matrix.m41 > 60 && STATE.screen > 0) Navigation.to(STATE.screen - 1);
+            else if(matrix.m41 < -60 && STATE.screen < 2) Navigation.to(STATE.screen + 1);
+            this.el.style.transform = 'translateX(0)';
+        }
+    };
+
+    /* ========== CORTEX LOGIC ========== */
+    const Cortex = {
+        switch: (tab) => {
+            STATE.activePanel = tab;
+            document.getElementById('panel-crystals').classList.toggle('hidden', tab !== 'crystals');
+            document.getElementById('panel-matrices').classList.toggle('hidden', tab !== 'matrices');
+            document.getElementById('tab-crystals').classList.toggle('active', tab === 'crystals');
+            document.getElementById('tab-matrices').classList.toggle('active', tab === 'matrices');
+            Cortex.render();
+        },
+
+        render: () => {
+            if (STATE.activePanel === 'crystals') Cortex.renderCrystals();
+            else Cortex.renderMatrices();
+        },
+
+        renderCrystals: () => {
+            const container = document.getElementById('crystal-container');
+            const query = document.getElementById('memory-search').value.toLowerCase();
+            const filtered = STATE.cortex.crystals.filter(c => 
+                c.content.toLowerCase().includes(query) || 
+                (c.tags && c.tags.some(t => t.toLowerCase().includes(query)))
+            );
+            
+            container.innerHTML = filtered.length ? filtered.map(c => `
+                <div class="glass-card p-4 rounded-xl border-l-2 ${c.pinned ? 'border-l-dynamic' : 'border-l-transparent'} hover:bg-white/5 transition group relative border-white/5">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex gap-2">
+                            ${(c.tags||[]).map(t => `<span class="px-2 py-0.5 rounded text-[8px] bg-white/5 text-white/50 uppercase tracking-wider border border-white/5">${t}</span>`).join('')}
+                        </div>
+                        <div class="flex gap-3 opacity-20 group-hover:opacity-100 transition">
+                            <button onclick="Cortex.togglePin(${c.id})" class="text-white hover:text-dynamic"><i data-lucide="pin" class="w-3 h-3 ${c.pinned?'fill-current':''}"></i></button>
+                            <button onclick="Cortex.deleteMemory(${c.id})" class="text-white hover:text-red-400"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                        </div>
+                    </div>
+                    <p class="text-xs text-white/80 font-medium leading-relaxed font-sans">"${c.content}"</p>
+                </div>
+            `).join('') : `<div class="text-center py-20 opacity-20 text-[10px] font-mono uppercase tracking-widest">Sem registros</div>`;
+            lucide.createIcons();
+        },
+
+        renderMatrices: () => {
+            const list = document.getElementById('matrix-list-mini');
+            if(!Array.isArray(STATE.cortex.matrices)) STATE.cortex.matrices = [];
+
+            const activeM = STATE.cortex.matrices.find(m => m.active);
+            document.getElementById('active-matrix-name').innerText = activeM ? activeM.name : 'Nenhuma';
+            
+            list.innerHTML = STATE.cortex.matrices.map(m => `
+                <div onclick="Cortex.loadToEditor('${m.id}')" class="matrix-item p-3 flex justify-between items-center cursor-pointer ${m.active ? 'active' : ''}">
+                    <span class="text-[9px] font-bold uppercase tracking-widest ${m.active ? 'text-dynamic' : 'text-white/40'}">${m.name}</span>
+                    <button onclick="Cortex.deleteMatrix('${m.id}', event)" class="text-white/10 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
+                </div>
+            `).join('');
+            
+            if (!STATE.editingMatrixId && activeM) Cortex.loadToEditor(activeM.id);
+            lucide.createIcons();
+        },
+
+        /* ACTIONS */
+        openNewMemory: () => {
+            Modal.show(`
+                <h3 class="font-display font-bold text-lg text-white mb-4 tracking-wide">Novo Cristal</h3>
+                <textarea id="new-mem-txt" class="w-full h-32 bg-white/5 rounded-xl p-4 text-xs text-white focus:bg-white/10 transition resize-none mb-3 border border-white/10 outline-none" placeholder="O que aprendeu hoje?"></textarea>
+                <input id="new-mem-tags" class="w-full bg-white/5 rounded-xl p-3 text-xs text-white mb-4 border border-white/10 outline-none" placeholder="Tags (separadas por vírgula)">
+                <div class="flex justify-end gap-2">
+                    <button onclick="Modal.hide()" class="px-4 py-2 rounded-lg text-[10px] font-bold text-white/40 hover:text-white transition uppercase">Cancelar</button>
+                    <button onclick="Cortex.saveNewMemory()" class="px-6 py-2 rounded-lg bg-dynamic/10 text-dynamic border border-dynamic/30 hover:bg-dynamic/20 text-[10px] font-bold uppercase transition tracking-wider">Cristalizar</button>
+                </div>
+            `);
+        },
+
+        saveNewMemory: () => {
+            const content = document.getElementById('new-mem-txt').value;
+            const tags = document.getElementById('new-mem-tags').value.split(',').map(t => t.trim()).filter(t => t);
+            if(!content) return;
+
+            const newMem = { id: Date.now(), content, tags, pinned: false };
+            STATE.cortex.crystals.unshift(newMem);
+            saveCortex(); Cortex.render(); Modal.hide(); toast("Memória Cristalizada");
+        },
+
+        togglePin: (id) => {
+            const c = STATE.cortex.crystals.find(x => x.id === id);
+            if(c) c.pinned = !c.pinned;
+            saveCortex(); Cortex.render();
+        },
+
+        deleteMemory: (id) => {
+            STATE.cortex.crystals = STATE.cortex.crystals.filter(c => c.id !== id);
+            saveCortex(); Cortex.render();
+        },
+
+        /* MATRIX ACTIONS */
+        loadToEditor: (id) => {
+            const m = STATE.cortex.matrices.find(mx => mx.id === id);
+            if(!m) return;
+            STATE.editingMatrixId = id;
+            document.getElementById('editor-title').innerText = `EDIT: ${m.name}`;
+            document.getElementById('matrix-editor').value = m.content;
+            Cortex.renderMatrices();
+        },
+
+        createNewMatrix: () => {
+            const name = prompt("Nome da nova matriz:");
+            if(!name) return;
+            const newM = { id: 'm' + Date.now(), name, content: '', active: false };
+            STATE.cortex.matrices.push(newM);
+            saveCortex(); Cortex.loadToEditor(newM.id);
+        },
+
+        saveActiveMatrix: () => {
+            const m = STATE.cortex.matrices.find(mx => mx.id === STATE.editingMatrixId);
+            if(!m) return;
+            m.content = document.getElementById('matrix-editor').value;
+            if(!STATE.cortex.matrices.find(x => x.active)) m.active = true;
+            saveCortex();
+            toast("Matriz Salva");
+        },
+
+        exportMatrix: () => {
+            const m = STATE.cortex.matrices.find(mx => mx.id === STATE.editingMatrixId);
+            if(!m) return;
+            const blob = new Blob([m.content], {type: 'text/markdown'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `${m.name}.md`; a.click();
+        },
+
+        importMatrix: () => {
+            const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.md,.txt';
+            inp.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const newM = { id: 'm' + Date.now(), name: file.name.replace('.md',''), content: ev.target.result, active: false };
+                    STATE.cortex.matrices.push(newM);
+                    saveCortex(); Cortex.renderMatrices(); toast("Matriz Importada");
+                };
+                reader.readAsText(file);
+            };
+            inp.click();
+        },
+
+        deleteMatrix: (id, e) => {
+            e.stopPropagation();
+            STATE.cortex.matrices = STATE.cortex.matrices.filter(m => m.id !== id);
+            if(STATE.editingMatrixId === id) STATE.editingMatrixId = null;
+            saveCortex(); Cortex.renderMatrices();
+        }
+    };
+
+    /* ========== DUALTUBE LOGIC ========== */
+    const DualTube = {
+        data: [
+            { cat: 'Frequências e Rituais', vids: ["Bt_rLbMjJDk", "_0wVkryxanE", "Id2NI9tv1r4"], desc: 'Ambientação' },
+            { cat: 'Arquitetura Mental', vids: ["qldgs0aLdB0", "FbutKMpd8MY", "1L9_rFmIGJ8"], desc: 'Construção' },
+            { cat: 'Meditações', vids: ["hfQ1L6fCfAo", "Tq99vQNQ6dQ", "DTDfkHwuMic"], desc: 'Deriva' }
+        ],
+        render: () => {
+            const container = document.getElementById('video-categories');
+            const stats = JSON.parse(localStorage.getItem(KEYS.STATS) || '{}');
+            
+            container.innerHTML = DualTube.data.map(c => `
+                <div class="animate-[fadeIn_0.5s_ease]">
+                    <div class="mb-4 pl-1 border-l-2 border-white/5">
+                        <h4 class="title-mix text-[10px] text-white/80 ml-4 tracking-[0.25em]">
+                           <b>${c.cat}</b>
+                        </h4>
+                        <p class="text-[8px] text-white/20 uppercase tracking-[0.2em] ml-4 mt-1">${c.desc}</p>
+                    </div>
+                    <div class="flex overflow-x-auto gap-4 pb-4 no-scrollbar snap-x px-1">
+                        ${c.vids.map(id => `
+                            <div onclick="playVideo('${id}', '${c.cat}')" class="flex-shrink-0 w-56 aspect-video rounded-xl bg-white/5 relative overflow-hidden group cursor-pointer snap-start border border-white/5 hover:border-dynamic/30 transition-all">
+                                <img src="https://img.youtube.com/vi/${id}/mqdefault.jpg" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition duration-500">
+                                <div class="absolute inset-0 bg-black/40 group-hover:bg-transparent transition"></div>
+                                <div class="absolute bottom-3 left-3 right-3 flex justify-between items-end">
+                                    <div class="px-2 py-1 bg-black/60 backdrop-blur rounded text-[8px] font-bold uppercase text-white/70 border border-white/5">
+                                      ${stats[id] ? '<span class="text-dynamic">Visto</span>' : 'Sintonizar'}
+                                    </div>
+                                    <div class="w-6 h-6 rounded-full bg-white/10 backdrop-blur flex items-center justify-center group-hover:bg-dynamic group-hover:text-black transition duration-500 border border-white/10 group-hover:border-transparent">
+                                      <i data-lucide="play" class="w-3 h-3 fill-current ml-0.5"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('dt-watched-count').innerText = Object.keys(stats).length;
+            lucide.createIcons();
+        }
+    };
+
+    function playVideo(id, cat) {
+        document.getElementById('player-overlay').classList.replace('hidden', 'flex');
+        document.getElementById('yt-embed').innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${id}?autoplay=1&modestbranding=1&rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+        
+        let stats = JSON.parse(localStorage.getItem(KEYS.STATS) || '{}');
+        stats[id] = { ts: Date.now(), cat };
+        localStorage.setItem(KEYS.STATS, JSON.stringify(stats));
+        DualTube.render();
+    }
+
+    function closePlayer() {
+        document.getElementById('player-overlay').classList.replace('flex', 'hidden');
+        document.getElementById('yt-embed').innerHTML = '';
+    }
+
+    /* ========== UI UTILS ========== */
+    const Modal = {
+        show: (html) => {
+            const overlay = document.getElementById('modal-overlay');
+            const content = document.getElementById('modal-content');
+            content.innerHTML = html;
+            overlay.classList.replace('hidden', 'flex');
+            setTimeout(() => {
+                content.classList.replace('scale-90', 'scale-100');
+                content.classList.replace('opacity-0', 'opacity-100');
+            }, 10);
+            lucide.createIcons();
+        },
+        hide: () => {
+            const overlay = document.getElementById('modal-overlay');
+            const content = document.getElementById('modal-content');
+            content.classList.replace('scale-100', 'scale-90');
+            content.classList.replace('opacity-100', 'opacity-0');
+            setTimeout(() => overlay.classList.replace('flex', 'hidden'), 300);
+        }
+    };
+
+    function toast(m, dur=3000) {
+        const t = document.getElementById('di_toast');
+        const d = document.createElement('div');
+        d.className = "glass-pill bg-black/80 border-dynamic/30 px-6 py-3 shadow-2xl backdrop-blur-xl text-[10px] font-bold uppercase tracking-[0.15em] text-dynamic animate-[float_4s_ease-in-out_infinite]";
+        d.innerText = m;
+        t.appendChild(d);
+        setTimeout(() => { d.style.opacity = '0'; setTimeout(() => d.remove(), 500); }, dur);
+    }
+
+    /* ========== INFODOSE INTEGRATION (THE MERGE) ========== */
+    function showInfodoseModal() {
+      // 1. Get current Meta Pulso Status
+      const activeMeta = STATE.metaData ? STATE.metaData[`${STATE.triad.color}|${STATE.triad.essence}|${STATE.triad.element}`] : null;
+      const sysName = activeMeta ? activeMeta.nome : "SISTEMA NEUTRO";
+      const quote = activeMeta ? activeMeta.frase : "Sinal não sintonizado.";
+      
+      const trainingText = `[SISTEMA META PULSO]\nARQUÉTIPO ATIVO: ${sysName}\n\n-- DIRETRIZES --\n"${quote}"\n\n[MICRO-SCRIPT DE ATIVAÇÃO]\n1. Respire fundo.\n2. Visualize a cor ${STATE.triad.color}.\n3. Invoque a essência do ${STATE.triad.element}.\n4. Ação: ${STATE.triad.essence}.`;
+
+      // 2. Build the Modal with Architect Grid
+      const architectsGrid = Object.keys(INFODOSE_PRESETS).map(key => {
+          const p = INFODOSE_PRESETS[key];
+          return `<div onclick="MetaPulso.applyPreset('${key}')" class="arch-btn group">
+                    <span class="text-[9px] font-black uppercase text-white/50 group-hover:text-white transition">${key}</span>
+                    <span class="text-[7px] text-white/20 uppercase mt-1 tracking-wider">${p.desc}</span>
+                  </div>`;
+      }).join('');
+
+      Modal.show(`
+        <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+          <div>
+            <strong class="text-lg text-white font-display">Infodose: ${sysName}</strong>
+            <p class="text-[9px] text-white/40 uppercase tracking-widest mt-1">Central de Comando</p>
+          </div>
+          <button onclick="Modal.hide()" class="text-white/40 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        
+        <div class="mb-6">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-dynamic mb-3">Sintonizar Arquiteto (Preset)</p>
+            <div class="grid grid-cols-3 gap-2 h-40 overflow-y-auto custom-scroll pr-1">
+                ${architectsGrid}
+            </div>
+        </div>
+
+        <div>
+             <p class="text-[9px] font-bold uppercase tracking-widest text-dynamic mb-3">Treinamento Gerado</p>
+            <div class="bg-black/40 rounded-xl p-4 h-32 overflow-y-auto custom-scroll font-mono text-xs text-white/70 border border-white/5 whitespace-pre-wrap">${trainingText}</div>
+             <button onclick="navigator.clipboard.writeText(\`${trainingText}\`); toast('Copiado');" class="glass-pill border-white/10 hover:bg-white/10 text-white/60 mt-2 text-[8px] w-full">Copiar Script</button>
+        </div>
+      `);
+    }
+
+    function initFloatingButton() {
+        setTimeout(() => {
+            if(document.getElementById('infodose-float')) return;
+            const btn = document.createElement('div');
+            btn.id = 'infodose-float';
+            btn.style.position = 'fixed'; btn.style.left = '50%'; btn.style.transform = 'translateX(-50%)'; btn.style.top = '110px'; btn.style.zIndex = 45;
+            btn.innerHTML = `<button onclick="showInfodoseModal()" class="glass-pill w-10 h-10 flex items-center justify-center rounded-full border-dynamic/20 text-dynamic hover:bg-white/10 transition cursor-pointer shadow-2xl backdrop-blur-md group"><i data-lucide="zap" class="w-4 h-4 group-hover:fill-current transition duration-500"></i></button>`;
+            document.body.appendChild(btn);
+            lucide.createIcons();
+        }, 800);
+    }
+  </script>
+</body>
+</html>
+
+
